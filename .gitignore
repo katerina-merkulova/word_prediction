@@ -1,4 +1,5 @@
 .idea
+.ipynb_checkpoints
 logsnextword1
 nextword1.h5
 tokenizer1.pkl
