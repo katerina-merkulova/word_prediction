@@ -5,6 +5,10 @@
 import re
 from pathlib import Path
 
+import spacy
+import numpy as np
+from tensorflow.keras.utils import to_categorical
+
 from openfl.interface.interactive_api.shard_descriptor import ShardDescriptor
 
 
@@ -18,12 +22,11 @@ class NextWordShardDescriptor(ShardDescriptor):
         self.title = title
         self.author = author
         self.dataset_dir = list(Path.cwd().rglob(f'{title}.txt'))[0]
-        self.data = self.load(self.dataset_dir)
-        self.tokenizer, self.sequences = self.tokenize(self.data)
-        self.X, self.y = self.transform(self.sequences, num_classes=len(self))
+        self.data = self.load_data(self.dataset_dir)  # list of words
+        self.X, self.y = self.get_sequences(self.data)
 
     def __len__(self):
-        """Length of dataset."""
+        """Number of sequences."""
         return len(self.X)
 
     def __getitem__(self, index: int):
@@ -33,12 +36,12 @@ class NextWordShardDescriptor(ShardDescriptor):
     @property
     def sample_shape(self):
         """Return the sample shape info."""
-        return ['1']
+        return self.X[0].shape
 
     @property
     def target_shape(self):
         """Return the target shape info."""
-        return ['1']
+        return self.y[0].shape
 
     @property
     def dataset_description(self) -> str:
@@ -46,8 +49,28 @@ class NextWordShardDescriptor(ShardDescriptor):
         return f'Dataset from {self.title} by {self.author}'
 
     @staticmethod
-    def load(path):
+    def load_data(path):
         """Load text file, return list of words."""
         file = open(path, 'r', encoding='utf8').read()
-        data = re.findall(r'\w+', file)
+        data = re.findall(r'[a-z]+', file.lower())
         return data
+
+    @ staticmethod
+    def get_sequences(data):
+        """Download model, if not yet, transform words to sequences."""
+        if not spacy.util.is_package('en_core_web_sm'):
+            spacy.cli.download('en_core_web_sm')
+
+        nlp = spacy.load('en_core_web_sm')
+        clean_vocab_list = [word for word in nlp.vocab.strings if re.fullmatch(r'[a-z]+', word)]
+        vocab = {word: idx for idx, word in enumerate(clean_vocab_list)}
+
+        X_seq = []
+        y_seq = []
+        for X, y in zip(data[:-1], data[1:]):
+            if X in vocab and y in vocab:
+                X_seq.append(vocab[X])
+                y_seq.append(vocab[y])
+        X_seq = np.array(X_seq)
+        y_seq = to_categorical(y_seq, num_classes=len(clean_vocab_list))
+        return X_seq, y_seq
