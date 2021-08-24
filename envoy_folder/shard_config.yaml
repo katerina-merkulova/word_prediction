@@ -1,4 +1,0 @@
-template: shard_descriptor.NextWordShardDescriptor
-params:
-  data_folder: data
-  rank_worldsize: 1,1
