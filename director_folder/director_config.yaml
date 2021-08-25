@@ -1,4 +1,4 @@
 settings:
   listen_ip: localhost
-  sample_shape: ['1']
+  sample_shape: ['3']
   target_shape: ['1']
