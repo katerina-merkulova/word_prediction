@@ -15,7 +15,7 @@ from openfl.interface.interactive_api.shard_descriptor import ShardDescriptor
 class NextWordShardDescriptor(ShardDescriptor):
     """"Data - any text."""
 
-    def __init__(self, title: str = '', author: str = '') -> None:
+    def __init__(self, title: str = '', author: str = '', ) -> None:
         """Initialize NextWordShardDescriptor."""
         super().__init__()
 
