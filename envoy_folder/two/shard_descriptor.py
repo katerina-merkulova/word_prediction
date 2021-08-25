@@ -5,7 +5,6 @@
 import re
 from pathlib import Path
 
-import spacy
 import numpy as np
 from tensorflow.keras.utils import to_categorical
 
@@ -15,7 +14,7 @@ from openfl.interface.interactive_api.shard_descriptor import ShardDescriptor
 class NextWordShardDescriptor(ShardDescriptor):
     """"Data - any text."""
 
-    def __init__(self, title: str = '', author: str = '', ) -> None:
+    def __init__(self, title: str = '', author: str = '') -> None:
         """Initialize NextWordShardDescriptor."""
         super().__init__()
 
@@ -36,12 +35,12 @@ class NextWordShardDescriptor(ShardDescriptor):
     @property
     def sample_shape(self):
         """Return the sample shape info."""
-        return self.X[0].shape
+        return ['3']
 
     @property
     def target_shape(self):
         """Return the target shape info."""
-        return self.y[0].shape
+        return ['1']
 
     @property
     def dataset_description(self) -> str:
@@ -55,14 +54,20 @@ class NextWordShardDescriptor(ShardDescriptor):
         data = re.findall(r'[a-z]+', file.lower())
         return data
 
-    @ staticmethod
+    @staticmethod
     def get_sequences(data):
-        """Download model, if not yet, transform words to sequences."""
-        if not spacy.util.is_package('en_core_web_sm'):
-            spacy.cli.download('en_core_web_sm')
+        """
+        Transform words to sequences.
 
-        nlp = spacy.load('en_core_web_sm')
-        clean_vocab_list = [word for word in nlp.vocab.strings if re.fullmatch(r'[a-z]+', word)]
+        To make vocab and clean it:
+            if not spacy.util.is_package('en_core_web_sm'):
+                spacy.cli.download('en_core_web_sm')
+            nlp = spacy.load('en_core_web_sm')
+            clean_vocab_list = [word for word in nlp.vocab.strings if re.fullmatch(r'[a-z]+', word)]
+        """
+
+        # spacy en_core_web_sm vocab_size = 48904
+        clean_vocab_list = open('vocab.txt', encoding='utf-8').read().split('\n')
         vocab = {word: idx for idx, word in enumerate(clean_vocab_list)}
 
         x_seq = []
