@@ -35,12 +35,12 @@ class NextWordShardDescriptor(ShardDescriptor):
     @property
     def sample_shape(self):
         """Return the sample shape info."""
-        return self.X[0].shape
+        return ['3']
 
     @property
     def target_shape(self):
         """Return the target shape info."""
-        return self.y[0].shape
+        return ['1']
 
     @property
     def dataset_description(self) -> str:
