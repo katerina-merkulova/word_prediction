@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 from tensorflow.keras.utils import to_categorical
 
 from openfl.interface.interactive_api.shard_descriptor import ShardDescriptor
@@ -35,12 +36,12 @@ class NextWordShardDescriptor(ShardDescriptor):
     @property
     def sample_shape(self):
         """Return the sample shape info."""
-        return ['3']
+        return ['3', '96']  # three vectors
 
     @property
     def target_shape(self):
         """Return the target shape info."""
-        return ['1']
+        return ['48904']  # row at one-hot matrix with n = vocab_size
 
     @property
     def dataset_description(self) -> str:
@@ -57,29 +58,31 @@ class NextWordShardDescriptor(ShardDescriptor):
     @staticmethod
     def get_sequences(data):
         """
-        Transform words to sequences.
+        Transform words to sequences, for X transform to vectors as well.
 
-        To make vocab and clean it:
+        To make vocab, clean it and get keyed vectors:
             if not spacy.util.is_package('en_core_web_sm'):
                 spacy.cli.download('en_core_web_sm')
             nlp = spacy.load('en_core_web_sm')
             clean_vocab_list = [word for word in nlp.vocab.strings if re.fullmatch(r'[a-z]+', word)]
+
+            word_to_vector = pd.Series([], name='vector')
+            for word in clean_vocab_list:
+                word_to_vector[word] = nlp(word).vector
+            word_to_vector.to_pickle('keyed_vectors.pkl')
         """
-
-        # spacy en_core_web_sm vocab_size = 48904
-        clean_vocab_list = open('vocab.txt', encoding='utf-8').read().split('\n')
-        vocab = {word: idx for idx, word in enumerate(clean_vocab_list)}
-
+        # spacy en_core_web_sm vocab_size = 48904, vector_size = 96
         x_seq = []
         y_seq = []
+        vectors = pd.read_pickle('keyed_vectors.pkl')
         for i in range(len(data) - 3):
             x = data[i:i + 3]  # make 3-grams
             y = data[i + 3]
-            cur_x = [vocab[word] for word in x if word in vocab]
-            if len(cur_x) == 3 and y in vocab:
+            cur_x = [vectors[word] for word in x if word in vectors]
+            if len(cur_x) == 3 and y in vectors:
                 x_seq.append(cur_x)
-                y_seq.append(vocab[y])
+                y_seq.append(vectors.index.get_loc(y))
 
         x_seq = np.array(x_seq)
-        y_seq = to_categorical(y_seq, num_classes=len(clean_vocab_list))
+        y_seq = to_categorical(y_seq, num_classes=vectors.shape[0])
         return x_seq, y_seq
